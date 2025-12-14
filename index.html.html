@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interstitial CTA Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: Inter, sans-serif;
+      background: linear-gradient(135deg, #020617, #0f172a);
+      color: #e5e7eb;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      min-height: 100vh;
+    }
+    .panel {
+      padding: 28px;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 12px; }
+    label { font-size: 0.8rem; margin-top: 14px; display:block; }
+    input, textarea {
+      width: 100%;
+      margin-top: 6px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: none;
+      background: #020617;
+      color: #e5e7eb;
+    }
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg,#38bdf8,#6366f1);
+      color: #020617;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .preview {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .card {
+      background:#020617;
+      padding:32px;
+      border-radius:20px;
+      width:360px;
+      text-align:center;
+      box-shadow:0 30px 60px rgba(0,0,0,0.6);
+      animation:fadeIn .4s ease;
+    }
+    .card img {
+      width:100%;
+      border-radius:14px;
+      margin-bottom:14px;
+    }
+    .card h2 { margin: 10px 0; }
+    .card a {
+      display:block;
+      margin-top:16px;
+      padding:12px;
+      background:linear-gradient(135deg,#fbbf24,#f97316);
+      border-radius:14px;
+      color:#020617;
+      font-weight:700;
+      text-decoration:none;
+    }
+    .skip { font-size:0.75rem; margin-top:10px; opacity:0.7; cursor:pointer; }
+    .stats { margin-top:20px; font-size:0.8rem; opacity:0.85; }
+    .code-box {
+      background:#020617;
+      padding:14px;
+      border-radius:12px;
+      font-size:0.75rem;
+      margin-top:16px;
+      white-space:pre-wrap;
+    }
+    @keyframes fadeIn { from{opacity:0; transform:scale(.95)} to{opacity:1; transform:scale(1)} }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="panel">
+    <h1>Interstitial CTA Generator</h1>
+
+    <label>Target URL</label>
+    <input id="target" placeholder="https://offer.com" />
+
+    <label>Headline</label>
+    <input id="headline" placeholder="Exclusive Deal Inside" />
+
+    <label>Description</label>
+    <textarea id="desc" rows="3" placeholder="Limited-time offer available now"></textarea>
+
+    <label>Button Text</label>
+    <input id="btnText" placeholder="Continue" />
+
+    <label>Image URL (optional)</label>
+    <input id="img" placeholder="https://image.jpg" />
+
+    <label>Auto Redirect (seconds)</label>
+    <input id="timer" placeholder="5" />
+
+    <button onclick="generate()">Generate Interstitial Link</button>
+
+    <div class="code-box" id="linkBox"></div>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="preview" id="preview"></div>
+</div>
+
+<script>
+function uid(){return Math.random().toString(36).substr(2,9)}
+
+function generate(){
+  const id = uid();
+  const data = {
+    target: target.value,
+    headline: headline.value,
+    desc: desc.value,
+    btnText: btnText.value,
+    img: img.value,
+    timer: timer.value || 0,
+    views:0,
+    clicks:0
+  }
+  localStorage.setItem(id, JSON.stringify(data));
+  const link = location.href.split('#')[0] + '#' + id;
+  linkBox.innerText = 'Your Interstitial Link:\n' + link;
+  renderPreview(data);
+}
+
+function renderPreview(d){
+  preview.innerHTML = `
+    <div class="card">
+      ${d.img ? `<img src="${d.img}">` : ''}
+      <h2>${d.headline}</h2>
+      <p>${d.desc}</p>
+      <a onclick="trackClick()">${d.btnText}</a>
+      <div class="skip" onclick="trackClick()">Skip & continue</div>
+    </div>`;
+}
+
+function trackClick(){ stats.innerText = 'CTA Click Recorded (Preview)'; }
+
+// Runtime mode
+if(location.hash){
+  const id = location.hash.replace('#','');
+  const data = JSON.parse(localStorage.getItem(id));
+  if(data){
+    data.views++;
+    localStorage.setItem(id, JSON.stringify(data));
+    document.body.innerHTML = `
+      <div class="preview">
+        <div class="card">
+          ${data.img ? `<img src="${data.img}">` : ''}
+          <h2>${data.headline}</h2>
+          <p>${data.desc}</p>
+          <a id="go">${data.btnText}</a>
+          <div class="skip" id="skip">Skip & continue</div>
+        </div>
+      </div>`;
+
+    const go = ()=>{ data.clicks++; localStorage.setItem(id, JSON.stringify(data)); window.location.href = data.target }
+    document.getElementById('go').onclick = go;
+    document.getElementById('skip').onclick = go;
+
+    if(data.timer>0){ setTimeout(go, data.timer*1000) }
+  }
+}
+</script>
+</body>
+</html>
