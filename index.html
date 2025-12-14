@@ -16,7 +16,7 @@
     .preview{display:flex;align-items:center;justify-content:center}
     .card{background:#020617;padding:32px;border-radius:20px;width:360px;text-align:center;box-shadow:0 30px 60px rgba(0,0,0,.6)}
     .card img{width:100%;border-radius:14px;margin-bottom:14px}
-    .card a{display:block;margin-top:16px;padding:12px;background:linear-gradient(135deg,#fbbf24,#f97316);border-radius:14px;color:#020617;font-weight:700;text-decoration:none}
+    .card a{display:block;margin-top:16px;padding:12px;background:linear-gradient(135deg,#fbbf24,#f97316);border-radius:14px;color:#020617;font-weight:700;text-decoration:none;cursor:pointer}
     .skip{font-size:.75rem;margin-top:10px;opacity:.7;cursor:pointer}
     .code-box{background:#020617;padding:14px;border-radius:12px;font-size:.75rem;margin-top:16px;white-space:pre-wrap;position:relative}
     .copy{position:absolute;top:10px;right:10px;cursor:pointer;font-size:.9rem;opacity:.8}
@@ -27,7 +27,7 @@
   <div class="panel">
     <h1>Interstitial CTA Generator</h1>
 
-    <label>Target URL (Skip / Continue)</label>
+    <label>Target URL (Skip / Auto redirect)</label>
     <input id="target" placeholder="https://target-website.com" />
 
     <label>Affiliate / Button URL</label>
@@ -45,7 +45,7 @@
     <label>Upload Image (optional)</label>
     <input type="file" id="imgFile" accept="image/*" />
 
-    <label>Auto Redirect (seconds → Target URL)</label>
+    <label>Auto Redirect Seconds (→ Target URL)</label>
     <input id="timer" placeholder="5" />
 
     <button onclick="generate()">Generate Interstitial Link</button>
@@ -63,32 +63,36 @@ function uid(){return Math.random().toString(36).slice(2,10)}
 let uploadedImg='';
 
 imgFile.addEventListener('change',e=>{
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=()=>uploadedImg=r.result;r.readAsDataURL(f);
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>uploadedImg=r.result;
+  r.readAsDataURL(f);
 });
 
 function generate(){
-  const id=uid();
-  const data={
-    target:target.value,
-    btnUrl:btnUrl.value,
-    headline:headline.value,
-    desc:desc.value,
-    btnText:btnText.value,
-    img:uploadedImg,
-    timer:+timer.value||0,
-    views:0,clicks:0
+  const id = uid();
+  const data = {
+    target: target.value.trim(),
+    btnUrl: btnUrl.value.trim(),
+    headline: headline.value,
+    desc: desc.value,
+    btnText: btnText.value,
+    img: uploadedImg,
+    timer: Number(timer.value)||0,
+    views:0,
+    clicks:0
   };
-  localStorage.setItem(id,JSON.stringify(data));
-  const link=location.href.split('#')[0]+'#'+id;
-  linkBox.innerHTML=`<span class="copy" onclick="copyLink()">📋</span>${link}`;
+
+  localStorage.setItem(id, JSON.stringify(data));
+  const link = location.href.split('#')[0] + '#' + id;
+  linkBox.innerHTML = `<span class="copy" onclick="copyLink()">📋</span>${link}`;
   renderPreview(data);
 }
 
 function renderPreview(d){
-  preview.innerHTML=`
+  preview.innerHTML = `
   <div class="card">
-    ${d.img?`<img src="${d.img}">`:''}
+    ${d.img ? `<img src="${d.img}">` : ''}
     <h2>${d.headline}</h2>
     <p>${d.desc}</p>
     <a>${d.btnText}</a>
@@ -97,35 +101,44 @@ function renderPreview(d){
 }
 
 function copyLink(){
-  const match=linkBox.innerText.match(/https?:\/\/\S+/);
-  if(match) navigator.clipboard.writeText(match[0]);
+  const m = linkBox.innerText.match(/https?:\/\/\S+/);
+  if(m) navigator.clipboard.writeText(m[0]);
 }
 
-// Runtime mode
+/* ================= RUNTIME MODE ================= */
 if(location.hash){
-  const id=location.hash.slice(1);
-  const d=JSON.parse(localStorage.getItem(id));
-  if(d){
-    d.views++;localStorage.setItem(id,JSON.stringify(d));
-    document.body.innerHTML=`
-    <div class="preview"><div class="card">
-      ${d.img?`<img src="${d.img}">`:''}
-      <h2>${d.headline}</h2>
-      <p>${d.desc}</p>
-      <a id="ctaBtn">${d.btnText}</a>
-      <div class="skip" id="skip">Skip & continue</div>
-    </div></div>`;
+  const id = location.hash.slice(1);
+  const d = JSON.parse(localStorage.getItem(id));
+  if(!d) return;
 
-    const btnClick=()=>{
-      d.clicks++;localStorage.setItem(id,JSON.stringify(d));
-      location.href=d.btnUrl;
-    };
-    const skipClick=()=>{ location.href=d.target };
+  d.views++;
+  localStorage.setItem(id, JSON.stringify(d));
 
-    document.getElementById('ctaBtn').onclick=btnClick;
-    document.getElementById('skip').onclick=skipClick;
+  document.body.innerHTML = `
+    <div class="preview">
+      <div class="card">
+        ${d.img ? `<img src="${d.img}">` : ''}
+        <h2>${d.headline}</h2>
+        <p>${d.desc}</p>
+        <a id="ctaBtn">${d.btnText}</a>
+        <div class="skip" id="skipBtn">Skip & continue</div>
+      </div>
+    </div>`;
 
-    if(d.timer>0){ setTimeout(skipClick,d.timer*1000) }
+  // CTA BUTTON → AFFILIATE URL
+  document.getElementById('ctaBtn').addEventListener('click', ()=>{
+    d.clicks++;
+    localStorage.setItem(id, JSON.stringify(d));
+    window.location.href = d.btnUrl;
+  });
+
+  // SKIP → TARGET URL
+  const goTarget = ()=>{ window.location.href = d.target; };
+  document.getElementById('skipBtn').addEventListener('click', goTarget);
+
+  // AUTO REDIRECT → TARGET URL
+  if(d.timer > 0){
+    setTimeout(goTarget, d.timer * 1000);
   }
 }
 </script>
