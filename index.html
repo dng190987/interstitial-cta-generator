@@ -6,10 +6,7 @@
   <title>Interstitial CTA Generator</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    body{
-      margin:0;font-family:Inter,sans-serif;
-      background:linear-gradient(135deg,#020617,#0f172a);color:#e5e7eb
-    }
+    body{margin:0;font-family:Inter,sans-serif;background:linear-gradient(135deg,#020617,#0f172a);color:#e5e7eb}
     .container{display:grid;grid-template-columns:400px 1fr;min-height:100vh}
     .panel{padding:28px;background:rgba(255,255,255,.04);backdrop-filter:blur(12px)}
     h1{font-size:1.4rem;margin-bottom:10px}
@@ -30,8 +27,8 @@
   <div class="panel">
     <h1>Interstitial CTA Generator</h1>
 
-    <label>Target URL (Final page)</label>
-    <input id="target" placeholder="https://website.com" />
+    <label>Target URL (Skip / Continue)</label>
+    <input id="target" placeholder="https://target-website.com" />
 
     <label>Affiliate / Button URL</label>
     <input id="btnUrl" placeholder="https://affiliate-link.com" />
@@ -43,12 +40,12 @@
     <textarea id="desc" rows="3" placeholder="Limited-time offer available"></textarea>
 
     <label>Button Text</label>
-    <input id="btnText" placeholder="Continue" />
+    <input id="btnText" placeholder="Get Offer" />
 
     <label>Upload Image (optional)</label>
     <input type="file" id="imgFile" accept="image/*" />
 
-    <label>Auto Redirect (seconds)</label>
+    <label>Auto Redirect (seconds → Target URL)</label>
     <input id="timer" placeholder="5" />
 
     <button onclick="generate()">Generate Interstitial Link</button>
@@ -65,18 +62,16 @@
 function uid(){return Math.random().toString(36).slice(2,10)}
 let uploadedImg='';
 
-document.getElementById('imgFile').addEventListener('change',e=>{
-  const file=e.target.files[0];if(!file)return;
-  const r=new FileReader();
-  r.onload=()=>uploadedImg=r.result;
-  r.readAsDataURL(file);
+imgFile.addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();r.onload=()=>uploadedImg=r.result;r.readAsDataURL(f);
 });
 
 function generate(){
   const id=uid();
   const data={
     target:target.value,
-    btnUrl:btnUrl.value||target.value,
+    btnUrl:btnUrl.value,
     headline:headline.value,
     desc:desc.value,
     btnText:btnText.value,
@@ -86,7 +81,7 @@ function generate(){
   };
   localStorage.setItem(id,JSON.stringify(data));
   const link=location.href.split('#')[0]+'#'+id;
-  linkBox.innerHTML=`<span class="copy" onclick="copyLink()">📋</span>Generated Link:\n${link}`;
+  linkBox.innerHTML=`<span class="copy" onclick="copyLink()">📋</span>${link}`;
   renderPreview(data);
 }
 
@@ -102,10 +97,11 @@ function renderPreview(d){
 }
 
 function copyLink(){
-  const text=linkBox.innerText.replace('📋','').trim();
-  navigator.clipboard.writeText(text);
+  const match=linkBox.innerText.match(/https?:\/\/\S+/);
+  if(match) navigator.clipboard.writeText(match[0]);
 }
 
+// Runtime mode
 if(location.hash){
   const id=location.hash.slice(1);
   const d=JSON.parse(localStorage.getItem(id));
@@ -116,14 +112,20 @@ if(location.hash){
       ${d.img?`<img src="${d.img}">`:''}
       <h2>${d.headline}</h2>
       <p>${d.desc}</p>
-      <a id="go">${d.btnText}</a>
+      <a id="ctaBtn">${d.btnText}</a>
       <div class="skip" id="skip">Skip & continue</div>
     </div></div>`;
-    const go=()=>{d.clicks++;localStorage.setItem(id,JSON.stringify(d));location.href=d.btnUrl};
-    goBtn=()=>go();
-    document.getElementById('go').onclick=go;
-    document.getElementById('skip').onclick=go;
-    if(d.timer>0)setTimeout(go,d.timer*1000);
+
+    const btnClick=()=>{
+      d.clicks++;localStorage.setItem(id,JSON.stringify(d));
+      location.href=d.btnUrl;
+    };
+    const skipClick=()=>{ location.href=d.target };
+
+    document.getElementById('ctaBtn').onclick=btnClick;
+    document.getElementById('skip').onclick=skipClick;
+
+    if(d.timer>0){ setTimeout(skipClick,d.timer*1000) }
   }
 }
 </script>
