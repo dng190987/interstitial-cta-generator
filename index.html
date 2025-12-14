@@ -78,13 +78,21 @@ function generate(){
     desc: desc.value,
     btnText: btnText.value,
     img: uploadedImg,
-    timer: Number(timer.value)||0,
-    views:0,
-    clicks:0
+    timer: Number(timer.value) || 0,
+    views: 0,
+    clicks: 0
   };
 
+  if(!data.target || !data.btnUrl){
+    alert('Please enter both Target URL and Button URL');
+    return;
+  }
+
   localStorage.setItem(id, JSON.stringify(data));
-  const link = location.href.split('#')[0] + '#' + id;
+
+  const base = window.location.origin + window.location.pathname;
+  const link = base + '#' + id;
+
   linkBox.innerHTML = `<span class="copy" onclick="copyLink()">📋</span>${link}`;
   renderPreview(data);
 }
